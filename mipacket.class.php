@@ -5,8 +5,8 @@
 *	+ генерация ключа и вектора инициализации из токена
 *	+ расшифровка
 *	+ шифрование
-*	+ разбор udp-пакета
-*	+ формирование udp-пакета
+*	+ парсинг udp-пакета
+*	+ сборка udp-пакета
 *
 *	https://github.com/OpenMiHome/mihome-binary-protocol
 *
@@ -22,14 +22,11 @@ class miPacket {
 	private $serial = '';
 	private $ts = '';
 	private $checksum = '';
-	public $data = '';
+	public 	$data = '';
 	
 	private $token = '';
 	private $key = '';
 	private $iv = '';
-	
-	private $hello = '21310020ffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-	
 	
 	/*
 		Сохранение токена.
@@ -41,7 +38,9 @@ class miPacket {
 			$this->token = $token;
 			$this->getKeyIv();
 			return true;
-		} else return false;
+		} else {
+			return false;
+		};
 	 
 	}
 	
@@ -62,7 +61,7 @@ class miPacket {
 	private function verifyToken($token) {
 	
 		if (strlen($token) == 32) return true;
-		else return false;
+		 else return false;
 	 
 	}
 	
@@ -102,25 +101,16 @@ class miPacket {
 	}
 	
 	/*
-		Формирование hello-пакета для процедуры рукопожатия (handshake).
-	*/
-	
-	public function getHello() {
-		
-		return $this->hello;
-		
-	}
-	
-	/*
 		Формирование пакета.
 	*/
 	
-	public function getRaw($cmd) {
+	public function msgBuild($cmd) {
 		
 		$this->data = $this->encryptData($cmd);
 	
 		$this->length = sprintf('%04x', (int)strlen($this->data)/2 + 32);
-			
+		$this->ts = sprintf('%08x', (hexdec($this->ts) + 1));
+		
 		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.$this->token.$this->data;
 		
 		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.md5(hex2bin($packet)).$this->data;
@@ -133,7 +123,7 @@ class miPacket {
 		Разбор пакета по полям.
 	*/
 	
-	public function setRaw($msg) {
+	public function msgParse($msg) {
 		
 		$this->magic = substr($msg, 0, 4);
 		$this->length = substr($msg, 4, 4);
