@@ -22,7 +22,11 @@ class miPacket {
 	private $serial = '';
 	private $ts = '';
 	private $checksum = '';
+	
 	public 	$data = '';
+	public 	$info = array('devicetype' => '',
+						  'serial' => '',
+						  'token' => '');
 	
 	private $token = '';
 	private $key = '';
@@ -109,6 +113,7 @@ class miPacket {
 		$this->data = $this->encryptData($cmd);
 	
 		$this->length = sprintf('%04x', (int)strlen($this->data)/2 + 32);
+		
 		$this->ts = sprintf('%08x', (hexdec($this->ts) + 1));
 		
 		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.$this->token.$this->data;
@@ -141,6 +146,10 @@ class miPacket {
 				$this->data = substr($msg, 64, $data_length);
 			}
 		}
+		
+		$this->info['devicetype'] = $this->devicetype;
+		$this->info['serial'] = $this->serial;
+		$this->info['token'] = $this->token;
 		
 	}
 	
