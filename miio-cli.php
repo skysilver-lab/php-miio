@@ -31,7 +31,7 @@ ini_set('display_errors', 1);
 
 $opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'decode:', 'debug', 'help'));
 
-var_dump($opts);
+//var_dump($opts);
 
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
