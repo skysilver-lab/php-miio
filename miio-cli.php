@@ -31,7 +31,7 @@ ini_set('display_errors', 1);
 
 $opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'decode:', 'debug', 'help'));
 
-//var_dump($opts);
+var_dump($opts);
 
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
@@ -84,7 +84,7 @@ if ( isset($opts['info']) && empty($opts['ip']) ) {
 if ( isset($opts['sendcmd']) && empty($opts['ip']) ) {
 	echo 'Необходимо указать ip-адрес устройства через параметр --ip' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --info' . PHP_EOL;
-} else if (empty($opts['sendcmd']) && !empty($opts['ip'])) {
+} else if (isset($opts['sendcmd']) && empty($opts['sendcmd']) && !empty($opts['ip'])) {
 	echo 'Необходимо указать команду' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --sendcmd \'{\'method\': \'get_status\', \'id\': 1}\'' . PHP_EOL;
 } else if (!empty($opts['sendcmd']) && !empty($opts['ip'])) {
