@@ -9,13 +9,17 @@
 
 require('miio.class.php');
 
+error_reporting(-1);
+ini_set('display_errors', 1);
+
 $ip = '192.168.1.47';
-$token = 'b31c928032e6a4afc898c5c8768axxxx';
+$bind_ip = '192.168.1.36';
+$token = 'b31c928032e6a4afc898c5c8768a518f';
 $debug = false;
 
 echo PHP_EOL . '<----- php-miio start ----->' . PHP_EOL . PHP_EOL;
 
-$dev = new miIO(null, null, $debug);
+$dev = new miIO(null, $bind_ip, null, $debug);
 
 if ($dev->discover() == true) {
 	echo 'Поиск выполнен.' . PHP_EOL;
@@ -38,7 +42,7 @@ if ($dev->discover() == true) {
 
 /*
 
-$dev = new miIO($ip, null, $debug);
+$dev = new miIO($ip, $bind_ip, null, $debug);
 
 echo PHP_EOL . "Отправляем команду на $dev->ip" . PHP_EOL;
 
