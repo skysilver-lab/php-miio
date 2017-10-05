@@ -165,7 +165,7 @@ class miPacket {
 		echo 'devicetype: ' . $this->devicetype . PHP_EOL;
 		echo 'serial: ' . $this->serial . PHP_EOL;
 		echo 'ts: ' . $this->ts . ' --> ' . hexdec($this->ts) . ' секунд'. PHP_EOL;
-		echo 'checksum: ' . $this->checksum . PHP_EOL;
+		echo 'checksum: ' . $this->checksum . '  <-- may be token' . PHP_EOL;
 	
 	}
 	
