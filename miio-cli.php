@@ -10,12 +10,14 @@
 *		--info			получить информацию об устройстве (аналог --discover IP)
 *		--sendcmd		отправить команду (д.б. заключена в одинарные кавычки
 *		--ip			IP-адрес устройства
+*		--bindip		IP-адрес интерфейса сервера (не обязательно, если интерфейс один)
 *		--token			токен устройства (не обязательно)
 *		--debug			включает вывод отладочной информации
 *		--help			справка по командам
 *	
 *	Примеры:
 *		php miio-cli.php --discover all
+*		php miio-cli.php --discover all --bindip 192.168.1.10
 *		php miio-cli.php --discover 192.168.1.45 --debug
 *		php miio-cli.php --ip 192.168.1.45 --info
 *		php miio-cli.php --ip 192.168.1.45 --sendcmd '{"method":"toggle",,"params":[],"id":1}'
@@ -29,9 +31,11 @@ require('miio.class.php');
 error_reporting(-1);
 ini_set('display_errors', 1);
 
-$opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'decode:', 'debug', 'help'));
+$bind_ip = null;
 
-var_dump($opts);
+$opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'decode:', 'debug', 'help', 'bindip:'));
+
+//var_dump($opts);
 
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
@@ -43,12 +47,14 @@ if ( empty($opts) || isset($opts['help']) ) {
 	echo '	--info		получить информацию об устройстве (аналог --discover IP)' . PHP_EOL;
 	echo '	--sendcmd	отправить команду (д.б. заключена в одинарные кавычки' . PHP_EOL;
 	echo '	--ip 		IP-адрес устройства' . PHP_EOL;
+	echo '	--bindip	IP-адрес интерфейса сервера (не обязательно, если интерфейс один)' . PHP_EOL;
 	echo '	--token 	токен устройства (не обязательно)' . PHP_EOL;
 	echo '	--debug		включает вывод отладочной информации' . PHP_EOL;
 	echo '	--help		справка по командам' . PHP_EOL;
 	echo PHP_EOL;
 	echo 'Примеры:' . PHP_EOL;
 	echo '	php miio-cli.php --discover all' . PHP_EOL;
+	echo '	php miio-cli.php --discover all --bindip 192.168.1.10' . PHP_EOL;
 	echo '	php miio-cli.php --discover 192.168.1.45 --debug' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --info' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --sendcmd \'{"method":"toggle",,"params":[],"id":1}\'' . PHP_EOL;
@@ -58,13 +64,15 @@ if ( empty($opts) || isset($opts['help']) ) {
 if ( isset($opts['debug']) ) $debug = true;
  else $debug = false;
 
+if ( isset($opts['bindip']) && !empty($opts['bindip']) ) $bind_ip = $opts['bindip'];
+ 
 if ( isset($opts['discover']) && !empty($opts['discover']) ) {
 	if ( $opts['discover'] == 'all' ) {
 		echo 'Поиск всех' . PHP_EOL;
-		cbDiscoverAll($debug);
+		cbDiscoverAll($bind_ip, $debug);
 	} else {
 		echo 'Поиск ' . $opts['discover'] . PHP_EOL;
-		cbDiscoverIP($opts['discover'], $debug);
+		cbDiscoverIP($opts['discover'], $bind_ip, $debug);
 	}
 }
 
@@ -72,7 +80,7 @@ if ( isset($opts['info']) && empty($opts['ip']) ) {
 	echo 'Необходимо указать ip-адрес устройства через параметр --ip' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --info' . PHP_EOL;
 } else if (isset($opts['info']) && !empty($opts['ip'])) {
-	$dev = new miIO($opts['ip'], null, $debug);
+	$dev = new miIO($opts['ip'], $bind_ip, null, $debug);
 	if ($dev->getInfo() == true) {
 		echo 'Информация об устройстве:' . PHP_EOL;
 		echo $dev->data . PHP_EOL;
@@ -88,7 +96,7 @@ if ( isset($opts['sendcmd']) && empty($opts['ip']) ) {
 	echo 'Необходимо указать команду' . PHP_EOL;
 	echo '	php miio-cli.php --ip 192.168.1.45 --sendcmd \'{\'method\': \'get_status\', \'id\': 1}\'' . PHP_EOL;
 } else if (!empty($opts['sendcmd']) && !empty($opts['ip'])) {
-	$dev = new miIO($opts['ip'], null, $debug);
+	$dev = new miIO($opts['ip'], $bind_ip, null, $debug);
 	if ($dev->msgSendRcvRaw($opts['sendcmd']) == true) {
 		echo "Устройство $dev->ip доступно и ответило:" . PHP_EOL;
 		echo $dev->data . PHP_EOL;
@@ -98,9 +106,9 @@ if ( isset($opts['sendcmd']) && empty($opts['ip']) ) {
 }
 
 
-function cbDiscoverAll ($debug) {
+function cbDiscoverAll ($bind_ip, $debug) {
 	
-	$dev = new miIO(null, null, $debug);
+	$dev = new miIO(null, $bind_ip, null, $debug);
 
 	if ($dev->discover() == true) {
 		echo 'Поиск выполнен.' . PHP_EOL;
@@ -113,24 +121,24 @@ function cbDiscoverAll ($debug) {
 					' DevType ' . 	$devprop->devicetype . 
 					' Serial ' . 	$devprop->serial . 
 					' Token ' . 	$devprop->token . PHP_EOL;
-			$d = new miIO($devprop->ip, $devprop->token, $debug);
-			$d->getInfo();
-			echo $d->data . PHP_EOL;
+			//$d = new miIO($devprop->ip, $bind_ip, $devprop->token, $debug);
+			//$d->getInfo();
+			//echo $d->data . PHP_EOL;
 		}
 	} else {
 		echo 'Поиск выполнен. Устройств не найдено.' . PHP_EOL;
 	}
 }
 
-function cbDiscoverIP ($ip, $debug) {
+function cbDiscoverIP ($ip, $bind_ip, $debug) {
 	
-	$dev = new miIO($ip, null, $debug);
+	$dev = new miIO($ip, $bind_ip, null, $debug);
 
 	if ($dev->discover($ip) == true) {
 		echo 'Поиск выполнен.' . PHP_EOL;
 		echo 'Устройство найдено и отвечает.' . PHP_EOL;
-		$dev->getInfo();
-		echo $dev->data . PHP_EOL;
+		//$dev->getInfo();
+		//echo $dev->data . PHP_EOL;
 	} else {
 		echo 'Поиск выполнен. Устройств не найдено.' . PHP_EOL;
 	}
