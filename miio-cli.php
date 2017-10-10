@@ -8,7 +8,7 @@
 *		--discover all	поиск устройств в локальной сети и вывод информации о них
 *		--discover IP	проверка доступности конкретного устройства и вывод информации о нем
 *		--info			получить информацию об устройстве (аналог --discover IP)
-*		--sendcmd		отправить команду (д.б. заключена в одинарные кавычки)
+*		--sendcmd		отправить команду (в linux д.б. заключена в одинарные кавычки, в windows без них)
 *		--decode		расшифровать пакет
 *		--ip			IP-адрес устройства
 *		--bindip		IP-адрес интерфейса сервера (не обязательно, если интерфейс один)
@@ -37,8 +37,6 @@ $bind_ip = null;
 
 $opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'decode:', 'debug', 'help', 'bindip:', 'decode:'));
 
-//var_dump($opts);
-
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
 	echo 'Управление wifi-устройствами из экосистемы xiaomi по протоколу miIO.' . PHP_EOL;
@@ -47,7 +45,7 @@ if ( empty($opts) || isset($opts['help']) ) {
 	echo '	--discover all	поиск устройств в локальной сети и вывод информации о них' . PHP_EOL;
 	echo '	--discover IP	проверка доступности конкретного устройства и вывод информации о нем' . PHP_EOL;
 	echo '	--info		получить информацию об устройстве (аналог --discover IP)' . PHP_EOL;
-	echo '	--sendcmd	отправить команду (д.б. заключена в одинарные кавычки' . PHP_EOL;
+	echo '	--sendcmd	отправить команду (в linux д.б. заключена в одинарные кавычки, в windows без них)' . PHP_EOL;
 	echo '	--decode	расшифровать пакет' . PHP_EOL;
 	echo '	--ip 		IP-адрес устройства' . PHP_EOL;
 	echo '	--bindip	IP-адрес интерфейса сервера (не обязательно, если интерфейс один)' . PHP_EOL;
@@ -68,6 +66,8 @@ if ( empty($opts) || isset($opts['help']) ) {
 if ( isset($opts['debug']) ) $debug = true;
  else $debug = false;
 
+if ($debug) var_dump($opts);
+ 
 if ( isset($opts['bindip']) && !empty($opts['bindip']) ) $bind_ip = $opts['bindip'];
  
 if ( isset($opts['discover']) && !empty($opts['discover']) ) {
@@ -137,9 +137,6 @@ function cbDiscoverAll ($bind_ip, $debug) {
 					' DevType ' . 	$devprop->devicetype . 
 					' Serial ' . 	$devprop->serial . 
 					' Token ' . 	$devprop->token . PHP_EOL;
-			//$d = new miIO($devprop->ip, $bind_ip, $devprop->token, $debug);
-			//$d->getInfo();
-			//echo $d->data . PHP_EOL;
 		}
 	} else {
 		echo 'Поиск выполнен. Устройств не найдено.' . PHP_EOL;
@@ -153,8 +150,6 @@ function cbDiscoverIP ($ip, $bind_ip, $debug) {
 	if ($dev->discover($ip) == true) {
 		echo 'Поиск выполнен.' . PHP_EOL;
 		echo 'Устройство найдено и отвечает.' . PHP_EOL;
-		//$dev->getInfo();
-		//echo $dev->data . PHP_EOL;
 	} else {
 		echo 'Поиск выполнен. Устройств не найдено.' . PHP_EOL;
 	}
