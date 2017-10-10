@@ -157,6 +157,11 @@ class miIO {
 			
 			$this->sockSetBroadcast();
 			
+			//socket_set_option($cs, SOL_SOCKET, SO_REUSEADDR, 1);		!!!
+			//socket_set_option($cs, SOL_SOCKET, SO_BROADCAST, 1);
+			//socket_set_option($cs, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>1, 'usec'=>0));
+			//socket_bind($cs, 0, 0);		!!!
+			
  			if( !@socket_bind($this->sock, $this->bind_ip , 0) ) {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
@@ -214,7 +219,7 @@ class miIO {
 	*/
 
 	public function socketWriteRead($msg) {
-	
+		
 		if ($this->discover($this->ip)) {
 
 			if ($this->debug) echo PHP_EOL . "Устройство $this->ip доступно" . PHP_EOL;
@@ -244,7 +249,9 @@ class miIO {
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Не удалось отправить данные в сокет [$errorcode] $errormsg" . PHP_EOL;
 			} else { if ($this->debug) echo "Отправлено в сокет $bytes байт" . PHP_EOL; }
-						
+			
+			$this->miPacket->data = '';
+			
 		    $buf = '';
 			if (($bytes = @socket_recvfrom($this->sock, $buf, 4096, 0, $remote_ip, $remote_port)) !== false) {
 				if ($buf != '') {
@@ -297,6 +304,8 @@ class miIO {
 	
 	public function msgSendRcvRaw($msg) {
 	
+		if (substr_count($msg, "'") > 0 ) $msg = str_replace("'", '"', $msg);
+		
 		if ($this->debug) echo "Команда для отправки - $msg" . PHP_EOL;
 		
 		return $this->socketWriteRead($msg);
