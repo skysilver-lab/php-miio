@@ -111,7 +111,7 @@ class miPacket {
 	public function msgBuild($cmd) {
 		
 		$this->data = $this->encryptData($cmd);
-	
+		
 		$this->length = sprintf('%04x', (int)strlen($this->data)/2 + 32);
 		
 		$this->ts = sprintf('%08x', (hexdec($this->ts) + 1));
@@ -138,7 +138,7 @@ class miPacket {
 		$this->ts = substr($msg, 24, 8);
 		$this->checksum = substr($msg, 32, 32);
 		
-		if ($this->length == '0020') {
+		if ( ($this->length == '0020') && (strlen($msg)/2 == 32) ) {
 			$this->setToken(substr($msg, 32, 32));
 		} else {
 			$data_length = strlen($msg) - 64;
@@ -165,7 +165,7 @@ class miPacket {
 		echo 'devicetype: ' . $this->devicetype . PHP_EOL;
 		echo 'serial: ' . $this->serial . PHP_EOL;
 		echo 'ts: ' . $this->ts . ' --> ' . hexdec($this->ts) . ' секунд'. PHP_EOL;
-		echo 'checksum: ' . $this->checksum . '  <-- may be token' . PHP_EOL;
+		echo 'checksum: ' . $this->checksum . PHP_EOL;
 	
 	}
 	
