@@ -20,8 +20,9 @@ class miPacket {
 	private $unknown1 = '00000000';
 	private $devicetype = '';
 	private $serial = '';
-	private $ts = '';
+	public 	$ts = '';
 	private $checksum = '';
+	public	$timediff = 0;
 	
 	public 	$data = '';
 	public 	$info = array('devicetype' => '',
@@ -31,6 +32,7 @@ class miPacket {
 	private $token = '';
 	private $key = '';
 	private $iv = '';
+	private $firstSet = true;
 	
 	/*
 		Сохранение токена.
@@ -114,11 +116,16 @@ class miPacket {
 		
 		$this->length = sprintf('%04x', (int)strlen($this->data)/2 + 32);
 		
-		$this->ts = sprintf('%08x', (hexdec($this->ts) + 1));
+		//$this->ts = sprintf('%08x', hexdec($this->ts));		// продублировать локальное время устройства
+		//$this->ts = sprintf('%08x', (hexdec($this->ts) + 1));	// плюс 1 секунда к локальному времени устройства
+		//$this->ts = sprintf('%08x', time());					// текущее время сервера
+		$this->ts = sprintf('%08x', time() + $this->timediff);	// с учетом разницы времени между устройством и сервером
 		
 		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.$this->token.$this->data;
 		
-		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.md5(hex2bin($packet)).$this->data;
+		$this->checksum = md5(hex2bin($packet));
+		
+		$packet = $this->magic.$this->length.$this->unknown1.$this->devicetype.$this->serial.$this->ts.$this->checksum.$this->data;
 		
 		return $packet;
 		
@@ -140,6 +147,12 @@ class miPacket {
 		
 		if ( ($this->length == '0020') && (strlen($msg)/2 == 32) ) {
 			$this->setToken(substr($msg, 32, 32));
+			// запомним разницу времени между устройством и сервером
+			$timediff = hexdec($this->ts) - time();
+			if ($this->firstSet && $timediff != 0) {
+				$this->timediff = $timediff;
+			}
+			if ($this->firstSet) $this->firstSet = false;
 		} else {
 			$data_length = strlen($msg) - 64;
 			if ($data_length > 0) {
@@ -164,7 +177,7 @@ class miPacket {
 		echo 'unknown1: ' . $this->unknown1 . PHP_EOL;
 		echo 'devicetype: ' . $this->devicetype . PHP_EOL;
 		echo 'serial: ' . $this->serial . PHP_EOL;
-		echo 'ts: ' . $this->ts . ' --> ' . hexdec($this->ts) . ' секунд'. PHP_EOL;
+		echo 'ts: ' . $this->ts . ' --> ' . hexdec($this->ts) . ' секунд' . ' --> ' . date('Y-m-d H:i:s', hexdec($this->ts)) . PHP_EOL;
 		echo 'checksum: ' . $this->checksum . PHP_EOL;
 	
 	}
