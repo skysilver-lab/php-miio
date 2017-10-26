@@ -59,6 +59,16 @@ class miIO {
 			 else echo "Соединение с устройством IP $this->ip" . PHP_EOL;
 			echo "Статус отладки [$this->debug]" . PHP_EOL;
 		}
+		
+		$this->sockCreate();
+		
+	}
+	
+	public function __destruct() {
+		
+		@socket_shutdown($this->sock, 2);
+		@socket_close($this->sock);
+		
 	}
 
 	/*
@@ -80,9 +90,9 @@ class miIO {
 		Установка параметров сокета - таймаут.
 	*/
 	
-	public function sockSetTimeout() {
+	public function sockSetTimeout($timeout = 2) {
 	
-		if (!socket_set_option($this->sock, SOL_SOCKET, SO_RCVTIMEO, array("sec" => $this->disc_timeout, "usec" => 0))) {
+		if (!socket_set_option($this->sock, SOL_SOCKET, SO_RCVTIMEO, array("sec" => $timeout, "usec" => 0))) {
 			$errorcode = socket_last_error();
 			$errormsg = socket_strerror($errorcode);
 			if ($this->debug) echo "Ошибка установки параметра SO_RCVTIMEO сокета - [socket_create()] [$errorcode] $errormsg" . PHP_EOL;
@@ -111,14 +121,12 @@ class miIO {
 	public function discover($ip = NULL) {
 		
 		if ($ip != NULL) {
-			//handshake
+
 			if ($this->debug) echo PHP_EOL . "Проверяем доступность устройства $ip" . PHP_EOL;
 			
-			$this->sockCreate();
+			$this->sockSetTimeout($this->send_timeout);
 			
-			$this->sockSetTimeout();
-			
-			if ($this->debug) echo "Отправляем hello-пакет на $ip с таймаутом $this->disc_timeout" . PHP_EOL;
+			if ($this->debug) echo " >>>>> Отправляем hello-пакет на $ip с таймаутом $this->send_timeout" . PHP_EOL;
 			
 			$helloPacket = hex2bin(HELLO_MSG);
 			
@@ -126,34 +134,36 @@ class miIO {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Не удалось отправить данные в сокет [$errorcode] $errormsg" . PHP_EOL;
-			} else { if ($this->debug) echo "Отправлено в сокет $bytes байт" . PHP_EOL; }
+			} else { if ($this->debug) echo " >>>>> Отправлено в сокет $bytes байт" . PHP_EOL; }
 						
 		    $buf = '';
 			if (($bytes = @socket_recvfrom($this->sock, $buf, 4096, 0, $remote_ip, $remote_port)) !== false) {
 				if ($buf != '') {
 					if ($this->debug) {
-						echo "Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
+						echo " <<<<< Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
 						if ($this->debug) echo "Прочитано $bytes байта из сокета" . PHP_EOL;
 					}
 					$this->miPacket->msgParse(bin2hex($buf));
-					if ($this->debug) $this->miPacket->printHead();
-					socket_close($this->sock);
+					if ($this->debug) {
+						$this->miPacket->printHead();
+						$timediff = hexdec($this->miPacket->ts) - time();
+						$ts_server = time();
+						echo 'ts_server: ' . dechex($ts_server) . ' --> ' . $ts_server . ' секунд' . ' --> ' . date('Y-m-d H:i:s', $ts_server) . PHP_EOL;
+						echo 'timediff: ' . $timediff . PHP_EOL;
+					}
 					return true;
 				}
 			} else if ($bytes === 0 || $bytes === false) {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Ошибка чтения из сокета [$errorcode] $errormsg" . PHP_EOL;
-				socket_close($this->sock);
 				return false;
 			}
 		} else {
-			//broadcast discovery
+
 			if ($this->debug) echo PHP_EOL . 'Поиск доступных устройств в локальной сети (handshake discovery)' . PHP_EOL;
 
-			$this->sockCreate();
-			
-			$this->sockSetTimeout();
+			$this->sockSetTimeout($this->disc_timeout);
 			
 			$this->sockSetBroadcast();
 			
@@ -170,7 +180,7 @@ class miIO {
 			
 			$ip = '255.255.255.255';
 
-			if ($this->debug) echo "Отправляем hello-пакет на $ip с таймаутом $this->disc_timeout" . PHP_EOL;
+			if ($this->debug) echo " >>>>> Отправляем hello-пакет на $ip с таймаутом $this->disc_timeout" . PHP_EOL;
 			
 			$helloPacket = hex2bin(HELLO_MSG);
 			
@@ -178,7 +188,7 @@ class miIO {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Не удалось отправить данные в сокет [$errorcode] $errormsg" . PHP_EOL;
-			} else { if ($this->debug) echo "Отправлено в сокет $bytes байт" . PHP_EOL; }
+			} else { if ($this->debug) echo " >>>>> Отправлено в сокет $bytes байт" . PHP_EOL; }
 			
 			$buf = '';
 		    $count = 0;
@@ -188,11 +198,19 @@ class miIO {
 			while ($bytes = @socket_recvfrom($this->sock, $buf, 4096, 0, $remote_ip, $remote_port)) {
 				if ($buf != '') {
 					if ($this->debug) {
-						echo ($count+1) . "  Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
+						echo ($count+1) . " <<<<< Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
 						if ($this->debug) echo "Прочитано $bytes байта из сокета" . PHP_EOL;
 					}
 					$this->miPacket->msgParse(bin2hex($buf));
-					if ($this->debug) $this->miPacket->printHead();
+
+					if ($this->debug) {
+						$this->miPacket->printHead();
+						$timediff = hexdec($this->miPacket->ts) - time();
+						$ts_server = time();
+						echo 'ts_server: ' . dechex($ts_server) . ' --> ' . $ts_server . ' секунд' . ' --> ' . date('Y-m-d H:i:s', $ts_server) . PHP_EOL;
+						echo 'timediff: ' . $timediff . PHP_EOL;
+					}
+					
 					$devinfo = $this->miPacket->info;
 					$devinfo += ["ip" => $remote_ip];
 					$devices[] = json_encode($devinfo);
@@ -207,11 +225,36 @@ class miIO {
 			
 			if(!empty($devices)) $this->data = '{"devices":'. json_encode($devices) .'}';
 		
-			socket_close($this->sock);
-			
 			if ($count != 0 || !empty($this->data)) return true;
 			 else return false;
 		}
+	}
+	
+	public function fastDiscover() {
+		
+		$timeout = 2;
+		
+		$this->sockSetTimeout($timeout);
+		$this->sockSetBroadcast();
+			
+		if( !@socket_bind($this->sock, $this->bind_ip , 0) ) {
+			$errorcode = socket_last_error();
+			$errormsg = socket_strerror($errorcode);
+			if ($this->debug) echo " --> Не удалось привязать сокет к адресу $this->bind_ip [$errorcode] $errormsg" . PHP_EOL;
+		} else { if ($this->debug) echo " --> Сокет успешно привязан к адресу $this->bind_ip" . PHP_EOL; }
+			
+		$ip = '255.255.255.255';
+
+		if ($this->debug) echo " --> Отправляем hello-пакет на $ip с таймаутом $timeout" . PHP_EOL;
+			
+		$helloPacket = hex2bin(HELLO_MSG);
+			
+		if(!($bytes = socket_sendto($this->sock, $helloPacket, strlen($helloPacket), 0, $ip, MIIO_PORT))) {
+			$errorcode = socket_last_error();
+			$errormsg = socket_strerror($errorcode);
+			if ($this->debug) echo " --> Не удалось отправить данные в сокет [$errorcode] $errormsg" . PHP_EOL . PHP_EOL;
+		} else { if ($this->debug) echo " --> Отправлено в сокет $bytes байт" . PHP_EOL . PHP_EOL; }
+		
 	}
 	
 	/*
@@ -224,14 +267,11 @@ class miIO {
 
 			if ($this->debug) echo PHP_EOL . "Устройство $this->ip доступно" . PHP_EOL;
 
-			$this->sockCreate();
-			
-			$this->sockSetTimeout();
+			$this->sockSetTimeout($this->send_timeout);
 			
 			if ($this->token != NULL) {
 				if(!$this->miPacket->setToken($this->token)) {
 					if ($this->debug) echo 'Неверный формат токена!' . PHP_EOL;
-					socket_close($this->sock);
 					die('Неверный формат токена!\n');
 				} else {
 					if ($this->debug) echo 'Используется токен, указанный вручную, - ' . $this->token . PHP_EOL;
@@ -240,15 +280,24 @@ class miIO {
 				if ($this->debug) echo 'Используется токен, полученный от устройства, - ' . $this->miPacket->getToken() . PHP_EOL;
 			}
 			
-			if ($this->debug) echo "Отправляем пакет на $this->ip с таймаутом $this->send_timeout" . PHP_EOL;
+			if ($this->debug) echo " >>>>> Отправляем пакет на $this->ip с таймаутом $this->send_timeout" . PHP_EOL;
 			
 			$packet = hex2bin($this->miPacket->msgBuild($msg));
-
+			
+			if ($this->debug) {
+				$this->miPacket->printHead();
+				$timediff = hexdec($this->miPacket->ts) - time();
+				echo 'data: ' . $this->miPacket->data . PHP_EOL;
+				$ts_server = time();
+				echo 'ts_server: ' . dechex($ts_server) . ' --> ' . $ts_server . ' секунд' . ' --> ' . date('Y-m-d H:i:s', $ts_server) . PHP_EOL;
+				echo 'timediff: ' . $timediff . PHP_EOL;
+			}
+			
 			if(!($bytes = socket_sendto($this->sock, $packet, strlen($packet), 0, $this->ip, MIIO_PORT))) {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Не удалось отправить данные в сокет [$errorcode] $errormsg" . PHP_EOL;
-			} else { if ($this->debug) echo "Отправлено в сокет $bytes байт" . PHP_EOL; }
+			} else { if ($this->debug) echo " >>>>> Отправлено в сокет $bytes байт" . PHP_EOL; }
 			
 			$this->miPacket->data = '';
 			
@@ -256,7 +305,7 @@ class miIO {
 			if (($bytes = @socket_recvfrom($this->sock, $buf, 4096, 0, $remote_ip, $remote_port)) !== false) {
 				if ($buf != '') {
 					if ($this->debug) {
-						echo "Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
+						echo " <<<<< Получен ответ от IP $remote_ip с порта $remote_port" . PHP_EOL;
 						if ($this->debug) echo "Прочитано $bytes байта из сокета" . PHP_EOL;
 					}
 					$this->miPacket->msgParse(bin2hex($buf));
@@ -264,14 +313,12 @@ class miIO {
 					$data_dec = $this->miPacket->decryptData($this->miPacket->data);	
 					if ($this->debug) echo "Расшифрованные данные: $data_dec" . PHP_EOL;
 					$this->data = $data_dec;
-					socket_close($this->sock);
 					return true;
 				}
 			} else if ($bytes === 0 || $bytes === false) {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
 				if ($this->debug) echo "Ошибка чтения из сокета [$errorcode] $errormsg" . PHP_EOL;
-				socket_close($this->sock);
 				return false;
 			}
 		} else {
