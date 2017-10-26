@@ -39,7 +39,7 @@ $opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'd
 
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
-	echo 'Управление wifi-устройствами из экосистемы xiaomi по протоколу miIO.' . PHP_EOL;
+	echo 'Управление wifi-устройствами из экосистемы xiaomi по протоколу miIO. Версия 0.2.4' . PHP_EOL;
 	echo PHP_EOL;
 	echo 'Принимаемые параметры:' . PHP_EOL;
 	echo '	--discover all	поиск устройств в локальной сети и вывод информации о них' . PHP_EOL;
@@ -86,11 +86,15 @@ if ( isset($opts['info']) && empty($opts['ip']) ) {
 } else if (isset($opts['info']) && !empty($opts['ip'])) {
 	if (isset($opts['token']) && !empty($opts['token'])) $dev = new miIO($opts['ip'], $bind_ip, $opts['token'], $debug);
 	 else $dev = new miIO($opts['ip'], $bind_ip, null, $debug);
+	
+	//echo PHP_EOL . 'Отправка предварительного широковещательного hello-пакета' . PHP_EOL;
+	//$dev->fastDiscover();
+	
 	if ($dev->getInfo() == true) {
 		echo 'Информация об устройстве:' . PHP_EOL;
 		echo $dev->data . PHP_EOL;
 	} else {
-		echo 'Устройств не отвечает.' . PHP_EOL;
+		echo 'Устройство не отвечает.' . PHP_EOL;
 	}
 }
 
