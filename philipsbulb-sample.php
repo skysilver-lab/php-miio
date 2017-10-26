@@ -10,8 +10,8 @@ require('philipsbulb.class.php');
 error_reporting(-1);
 ini_set('display_errors', 1);
 
-$ip = '192.168.1.48';
-$token = 'b35f0af9064e6434d3f571ec05e5acc6';
+$ip = '192.168.1.46';
+$token = '40011346b40fdb540a5b6eeae1167bf5';
 $bind_ip = null;
 $debug = false;
 
@@ -24,7 +24,6 @@ echo 'Яркость: ' . $bulb->status['bright'] . PHP_EOL;
 echo 'Цветовая температура: ' . $bulb->status['cct'] . PHP_EOL;
 echo 'Сцена: ' . $bulb->status['snm'] . PHP_EOL;
 echo 'Таймер выключения: ' . $bulb->status['dv'] . PHP_EOL;
-
 
 sleep(2);
 
@@ -50,3 +49,7 @@ for ($i = 1; $i < 5; $i++) {
 	if($bulb->setScene($i)) echo " Включена сцена $i." . PHP_EOL;
 	sleep(2);
 }
+
+echo PHP_EOL . date('H:m:s', time());
+if($bulb->powerOff()) echo ' Лампа выключена.' . PHP_EOL;
+ else echo "Лампа не выключена. Ошибка: $bulb->error" . PHP_EOL;
