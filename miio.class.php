@@ -30,10 +30,8 @@ class miIO {
 	public 	$send_timeout = 5;
 	public 	$disc_timeout = 15;
 
-	public 	$_device_ts = NULL;
-    public 	$_id = '1';
-    public 	$_devtype = NULL;
-    public 	$_serial = NULL;
+    public 	$msg_id = '1';
+	public	$useAutoMsgID = false;
 
 	public 	$data = '';
 	public 	$sock = NULL;
@@ -331,12 +329,15 @@ class miIO {
 		Отправка сообщения (метод и параметры раздельно) устройству и прием ответа.
 	*/
 	
-	public function msgSendRcv($command, $parameters = NULL) {
+	public function msgSendRcv($command, $parameters = NULL, $id = 1) {
 	
-		$msg = '{"id":' . $this->_id . ',"method":"'. $command . '"}';
+		if (isset($id) && ($id > 0) && !$this->useAutoMsgID) $this->msg_id = $id;
+		 else if ($this->useAutoMsgID) $this->msg_id = $this->getMsgID($this->ip);
+		
+		$msg = '{"id":' . $this->msg_id . ',"method":"'. $command . '"}';
 			
 		if ($parameters != NULL) {
-			$msg = '{"id":' . $this->_id . ',"method":"'. $command . '","params":' . $parameters . '}';
+			$msg = '{"id":' . $this->msg_id . ',"method":"'. $command . '","params":' . $parameters . '}';
 		}
 			
 		if ($this->debug) echo "Команда для отправки - $msg" . PHP_EOL;
@@ -360,12 +361,42 @@ class miIO {
 	}
 	
 	/*
+		Получить новый идентификатор для команды.
+	*/
+	
+	public function getMsgID($ip) {
+	
+		if (file_exists ('id.json')) {
+			$file = file_get_contents('id.json');
+			$ids = json_decode($file, TRUE);
+		} else {
+			file_put_contents('id.json', '');
+			$ids = array();
+		}
+
+		if (!empty($ids)) {
+			if (array_key_exists($ip, $ids)) {
+				if ($ids[$ip] > 1000) $ids[$ip] = 1;
+				 else $ids[$ip] += 1;
+			} else {
+				$ids += [$ip => 1];
+			}
+		} else {
+			$ids = [$ip => 1];
+		}
+
+		file_put_contents('id.json', json_encode($ids));
+	
+		return $ids[$ip];
+	}
+	
+	/*
 		Получить miIO-сведения об устройстве.
 	*/
 	
-	public function getInfo() {
+	public function getInfo($msg_id = 1) {
 	
-		return $this->msgSendRcv('miIO.info', '[]');
+		return $this->msgSendRcv('miIO.info', '[]', $msg_id);
 	 
 	}
 	
