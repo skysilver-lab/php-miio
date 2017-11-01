@@ -5,7 +5,7 @@
 *	Copyright (C) 2017 Agaphonov Dmitri aka skysilver [mailto:skysilver.da@gmail.com]
 */
 
-require('./devices/philipsbulb.class.php');
+include_once('./devices/philipsbulb.class.php');
 
 error_reporting(-1);
 ini_set('display_errors', 1);
@@ -25,6 +25,7 @@ $bulb = new philipsBulb($ip, $bind_ip, $token, $debug);
 // $bulb->enableAutoMsgID();
 
 echo PHP_EOL . date('H:i:s', time());
+
 if($bulb->getStatus($cmd_id)) {
 	echo ' Статус получен.' . PHP_EOL;
 	echo 'Питание: ' . $bulb->status['power'] . PHP_EOL;
@@ -34,7 +35,7 @@ if($bulb->getStatus($cmd_id)) {
 	echo 'Таймер выключения: ' . $bulb->status['dv'] . PHP_EOL;
 	$cmd_id += 1;
 	sleep(2);
-
+	
 	echo PHP_EOL . date('H:i:s', time()) . PHP_EOL;
 	echo $bulb->getInfo($cmd_id) . PHP_EOL;
 	$cmd_id += 1;
@@ -42,25 +43,26 @@ if($bulb->getStatus($cmd_id)) {
 
 	echo PHP_EOL . date('H:i:s', time());
 	if($bulb->powerOn($cmd_id)) echo ' Лампа включена.' . PHP_EOL;
-	 else echo "Лампа не включена. Ошибка: $bulb->error" . PHP_EOL;
+	 else echo " Лампа не включена. Ошибка: $bulb->error" . PHP_EOL;
 	$cmd_id += 1;
 	sleep(2);
 
 	echo PHP_EOL . date('H:i:s', time());
 	if($bulb->powerOff($cmd_id)) echo ' Лампа выключена.' . PHP_EOL;
-	 else echo "Лампа не выключена. Ошибка: $bulb->error" . PHP_EOL;
+	 else echo " Лампа не выключена. Ошибка: $bulb->error" . PHP_EOL;
 	$cmd_id += 1;
 	sleep(2);
 
 	for ($i = 1; $i < 5; $i++) {
 		echo PHP_EOL . date('H:i:s', time());
 		if($bulb->setScene($i, $cmd_id)) echo " Включена сцена $i." . PHP_EOL;
+		 else echo " Сцена $i не выключена. Ошибка: $bulb->error" . PHP_EOL;
 		$cmd_id += 1;
 		sleep(2);
 	}
 
 	echo PHP_EOL . date('H:i:s', time());
 	if($bulb->powerOff($cmd_id)) echo ' Лампа выключена.' . PHP_EOL;
-	 else echo "Лампа не выключена. Ошибка: $bulb->error" . PHP_EOL;
+	 else echo " Лампа не выключена. Ошибка: $bulb->error" . PHP_EOL;
 
-} else echo " Лампа не доступна. Ошибка: $bulb->error" . PHP_EOL;
+} else echo " Статус лампы не получен. Ошибка: $bulb->error" . PHP_EOL;
