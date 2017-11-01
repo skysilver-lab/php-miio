@@ -39,7 +39,7 @@ $opts = getopt('d::', array('ip:', 'token:', 'info', 'discover:', 'sendcmd:', 'd
 
 if ( empty($opts) || isset($opts['help']) ) {
 	echo PHP_EOL;
-	echo 'Управление wifi-устройствами из экосистемы xiaomi по протоколу miIO. Версия 0.2.5' . PHP_EOL;
+	echo 'Управление wifi-устройствами из экосистемы xiaomi по протоколу miIO. Версия 0.2.6' . PHP_EOL;
 	echo PHP_EOL;
 	echo 'Принимаемые параметры:' . PHP_EOL;
 	echo '	--discover all	поиск устройств в локальной сети и вывод информации о них' . PHP_EOL;
@@ -132,7 +132,10 @@ if ( isset($opts['decode']) && empty($opts['token']) ) {
 function cbDiscoverAll ($bind_ip, $debug) {
 	
 	$dev = new miIO(null, $bind_ip, null, $debug);
-
+	
+	//echo PHP_EOL . 'Отправка предварительного широковещательного hello-пакета' . PHP_EOL;
+	//$dev->fastDiscover();
+	
 	if ($dev->discover() == true) {
 		echo 'Поиск выполнен.' . PHP_EOL;
 		$devices = json_decode($dev->data);
