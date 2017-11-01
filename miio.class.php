@@ -165,11 +165,6 @@ class miIO {
 			
 			$this->sockSetBroadcast();
 			
-			//socket_set_option($cs, SOL_SOCKET, SO_REUSEADDR, 1);		!!!
-			//socket_set_option($cs, SOL_SOCKET, SO_BROADCAST, 1);
-			//socket_set_option($cs, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>1, 'usec'=>0));
-			//socket_bind($cs, 0, 0);		!!!
-			
  			if( !@socket_bind($this->sock, $this->bind_ip , 0) ) {
 				$errorcode = socket_last_error();
 				$errormsg = socket_strerror($errorcode);
@@ -310,7 +305,25 @@ class miIO {
 					if ($this->debug) $this->miPacket->printPacket();
 					$data_dec = $this->miPacket->decryptData($this->miPacket->data);	
 					if ($this->debug) echo "Расшифрованные данные: $data_dec" . PHP_EOL;
-					$this->data = $data_dec;
+					//проверить json на валидность
+					json_decode($data_dec);
+					if ($jsonErrCode = json_last_error() !== JSON_ERROR_NONE) {
+						$jsonErrMsg = $this->jsonLastErrorMsg();
+						if ($this->debug) echo "Данные JSON не валидны. Ошибка: $jsonErrMsg" . PHP_EOL;
+						if ($jsonErrCode == JSON_ERROR_CTRL_CHAR) {
+							// если ошибка в управляющих символах, то удаляем хвосты в начале и в конце и возвращаем
+							if ($this->debug) echo 'Выполняем trim()' . PHP_EOL;
+							$this->data = trim($data_dec);
+							return true;
+						} else {
+							// если иная ошибка, возвращаем как есть для обработки на верхнем уровне
+							$this->data = $data_dec;
+						}
+					} else {
+						// если ошибок нет, то возвращаем как есть
+						if ($this->debug) echo 'Данные JSON валидны.' . PHP_EOL;
+						$this->data = $data_dec;
+					}
 					return true;
 				}
 			} else if ($bytes === 0 || $bytes === false) {
@@ -388,6 +401,33 @@ class miIO {
 		file_put_contents('id.json', json_encode($ids));
 	
 		return $ids[$ip];
+	}
+	
+	/*
+		Получить описание ошибки JSON.
+		(определяем функцию, если старая версия PHP)
+	*/
+	
+	public function jsonLastErrorMsg() {
+	
+		if (!function_exists('json_last_error_msg')) {
+		
+			function json_last_error_msg() {
+			
+				static $ERRORS = array(JSON_ERROR_NONE => 'No error has occurred',
+										JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded',
+										JSON_ERROR_STATE_MISMATCH => 'Invalid or malformed JSON',
+										JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded',
+										JSON_ERROR_SYNTAX => 'Syntax error',
+										JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded');
+
+				$error = json_last_error();
+				return isset($ERRORS[$error]) ? $ERRORS[$error] : 'Unknown error';
+			}
+		}
+						
+		return json_last_error_msg();
+		
 	}
 	
 	/*
