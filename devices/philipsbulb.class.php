@@ -6,7 +6,7 @@
 *
 */
 
-require('miio.class.php');
+include_once('miio.class.php');
 
 class philipsBulb {
 	
@@ -36,12 +36,21 @@ class philipsBulb {
 		
 	}
 
+	/*
+		Активирует авто-формирование уникальных ID сообщений с их сохранением в файл id.json
+	*/
 	
 	public function enableAutoMsgID() {
 	
 		$this->dev->useAutoMsgID = true;
 	
 	}
+	
+	/*
+		Деактивирует авто-формирование уникальных ID сообщений с их сохранением в файл id.json
+		ID сообщений необходимо передавать в виде аргумента при каждой отправке команды,
+		либо не указывать вообще, тогда ID будет 1 для всех сообщений.
+	*/
 	
 	public function disableAutoMsgID() {
 	
@@ -66,11 +75,11 @@ class philipsBulb {
 			bright - яркость (от 1 до 100), 
 			cct - цветовая температура (от 1 до 100), 
 			snm - номер сцены (от 1 до 4),
-			dv - таймер на выключение, макс. 6 часов (в секундах от 0 до 21600)
+			dv - таймер на выключение, макс. 6 часов (в секундах от 1 до 21600)
 	*/
 	
 	public function getStatus($msg_id = 1) {
-	
+
 		$result = $this->dev->msgSendRcv('get_prop', '["power","bright","cct","snm","dv"]', $msg_id);
 		
 		if ($result) {
@@ -179,6 +188,10 @@ class philipsBulb {
 				$res = json_decode($this->dev->data);
 				if (isset($res->{'result'})) {
 					if ($res->{'result'}[0] == 'ok') return true;
+					if ($res->{'result'}[0] == 'error') {
+						$this->error = 'Unknown error.';
+						return false;
+					}
 				} else if (isset($res->{'error'})) {
 					$this->error = $res->{'error'}->{'message'};
 					return false;
@@ -193,5 +206,5 @@ class philipsBulb {
 		}
 		
 	}
+	
 }
-
