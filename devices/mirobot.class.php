@@ -229,11 +229,12 @@ class miRobotVacuum {
 		if ($result) {
 			if ($this->dev->data != '') {
 				$res = json_decode($this->dev->data);
-				if(isset($res->{'result'}) && is_array($res->{'result'}) && in_array('ok', $res->{'result'})) {
-					return true;
-				}
-				elseif (isset($res->{'result'}) && ($res->{'result'} == 0)) return true;
-				else {
+				if($res instanceof \stdClass && property_exists($res, 'result')){
+					if(is_array($res->{'result'}) && in_array('ok', $res->{'result'})) {
+						return true;
+					}
+					elseif (isset($res->{'result'}) && ($res->{'result'} == 0)) return true;
+				} else {
 					$this->error = $this->dev->data;
 					return false;
 				}
