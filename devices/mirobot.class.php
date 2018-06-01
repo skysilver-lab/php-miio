@@ -221,6 +221,17 @@ class miRobotVacuum {
 	}
 	
 	/*
+		Зональная уборка
+	*/
+	
+	public function zoned_clean(int $x1_coord, int $y1_coord, int $x2_coord, int $y2_coord, int $count, $msg_id = 1) {
+	
+		$result = $this->dev->msgSendRcv('app_zoned_clean', "[[$x1_coord,$y1_coord,$x2_coord,$y2_coord,$count]]", $msg_id);
+		return $this->verify($result);
+	
+	}
+	
+	/*
 		Проверка ответа
 	*/
 	
