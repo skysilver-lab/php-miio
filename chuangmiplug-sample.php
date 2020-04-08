@@ -27,7 +27,7 @@ $plug = new chuangMiPlug($ip, $bind_ip, $token, $debug);
 echo PHP_EOL . date('H:i:s', time());
 
 if($plug->getStatus($cmd_id)) {
-	echo ' Статус получен.' . PHP_EOL;
+	echo ' Status Received.' . PHP_EOL;
 	echo 'Power: ' . $plug->status['power'] . PHP_EOL;
 	$cmd_id += 1;
 	sleep(2);
@@ -44,7 +44,7 @@ if($plug->getStatus($cmd_id)) {
 	sleep(2);
 
 	echo PHP_EOL . date('H:i:s', time());
-	if($plug->powerOff($cmd_id)) echo ' The plug is on.' . PHP_EOL;
+	if($plug->powerOff($cmd_id)) echo ' The plug is off.' . PHP_EOL;
 	 else echo " The plug is not connected. Error: $plug->error" . PHP_EOL;
 	$cmd_id += 1;
 	sleep(2);
